@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cricket Scorecard</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f0f0f0;
+        }
+
+        #scorecard {
+            background: #fff;
+            padding: 20px;
+            margin: 20px auto;
+            width: 90%;
+            max-width: 800px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Dismissal Animation Styles */
+        .dismissal-animation {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ff4444;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            color: white;
+            z-index: 150;
+            display: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            width: 80%;
+            max-width: 400px;
+            animation: slideDown 0.5s ease-out;
+        }
+
+        @keyframes slideDown {
+            0% { transform: translate(-50%, -100px); }
+            100% { transform: translate(-50%, 0); }
+        }
+
+        .duck-animation {
+            font-size: 2em;
+            animation: duckDance 1s infinite;
+            display: none;
+            margin-top: 10px;
+        }
+
+        @keyframes duckDance {
+            0% { transform: rotate(-15deg); }
+            50% { transform: rotate(15deg); }
+            100% { transform: rotate(-15deg); }
+        }
+
+        /* Rest of existing styles... */
+        .team-section {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .score-section {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .players-section {
+            display: flex;
+            justify-content: space-between;
+            gap: 30px;
+        }
+
+        .bold {
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        .player-stats {
+            font-size: 0.9em;
+            color: #666;
+            margin-left: 5px;
+        }
+
+        .bowler-stats {
+            font-size: 0.9em;
+            color: #666;
+            margin-left: 10px;
+        }
+
+        .run-rate {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .admin-panel {
+            padding: 20px;
+            background: #fff;
+            margin: 20px auto;
+            width: 90%;
+            max-width: 800px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .admin-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        input, button {
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 100%;
+        }
+
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        .button-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .over-progress {
+            display: flex;
+            gap: 3px;
+            margin-top: 5px;
+            flex-wrap: wrap;
+        }
+
+        .ball-symbol {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+        }
+
+        .symbol-6 { background: #4CAF50; }
+        .symbol-4 { background: #2196F3; }
+        .symbol-W { background: #f44336; }
+        .symbol-nb { background: #FFEB3B; color: #000; }
+        .symbol-0 { background: #9E9E9E; }
+        .symbol-wd { background: #8BC34A; }
+        .symbol-lb { background: #FF9800; }
+        .default-symbol { background: #607D8B; }
+
+        .event-animation {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3em;
+            font-weight: bold;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 100;
+            animation: flash 1s ease-out;
+            display: none;
+        }
+
+        @keyframes flash {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
+            50% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+        }
+
+        .free-hit-animation {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 0, 0, 0.3);
+            animation: blink 1s infinite;
+            display: none;
+            pointer-events: none;
+            z-index: 90;
+            border: 4px solid red;
+        }
+
+        .free-hit-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3em;
+            color: white;
+            text-shadow: 0 0 10px red;
+            font-weight: bold;
+        }
+
+        @keyframes blink {
+            0% { opacity: 0.4; }
+            50% { opacity: 0.8; }
+            100% { opacity: 0.4; }
+        }
+
+        .previous-bowlers {
+            margin-top: 10px;
+            max-height: 150px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 5px;
+            border-radius: 4px;
+            background: white;
+        }
+
+        .previous-bowler {
+            padding: 5px;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 0.9em;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .previous-bowler:hover {
+            background: #f8f9fa;
+        }
+
+        .bat-symbol {
+            color: #c90;
+            font-size: 1.2em;
+            margin-left: 8px;
+            display: none;
+        }
+        
+        .bat-symbol.visible {
+            display: inline-block;
+            animation: batSwing 0.3s ease;
+        }
+
+        @keyframes batSwing {
+            0% { transform: rotate(0deg); }
+            25% { transform: rotate(15deg); }
+            75% { transform: rotate(-15deg); }
+            100% { transform: rotate(0deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="scorecard">
+        <!-- Dismissal Animation -->
+        <div class="dismissal-animation" id="dismissalAnimation">
+            <h3 style="margin: 0 0 10px 0;">Wicket! 🏏</h3>
+            <div id="dismissalDetails" style="font-size: 0.9em;"></div>
+            <div class="duck-animation" id="duckAnimation">🦆 Duck!</div>
+        </div>
+
+        <!-- Free Hit Animation -->
+        <div class="free-hit-animation" id="freeHitAnimation">
+            <div class="free-hit-text">FREE HIT</div>
+        </div>
+        
+        <!-- Event Animations -->
+        <div class="event-animation six-animation" id="sixAnimation">SIX!</div>
+        <div class="event-animation four-animation" id="fourAnimation">FOUR!</div>
+        <div class="event-animation out-animation" id="outAnimation">OUT!</div>
+        <div class="event-animation wide-animation" id="wideAnimation">WIDE!</div>
+        <div class="event-animation noball-animation" id="noballAnimation">NO BALL!</div>
+        <div class="event-animation legbye-animation" id="legByeAnimation"></div>
+
+        <!-- Scorecard Content -->
+        <div class="team-section">
+            <div>
+                <div class="bold" id="team1">TEAM A</div>
+                <div class="bold" id="team2">TEAM B</div>
+            </div>
+            <div class="score-section">
+                <div class="bold"><span id="runs">0</span>/<span id="wickets">0</span></div>
+                <div>
+                    OVERS: <span id="overs">0.0</span>/<span id="totalOvers">0.0</span>
+                    <div class="run-rate">RR: <span id="runRate">0.00</span></div>
+                </div>
+            </div>
+            <div class="players-section">
+                <div>
+                    <div>BAT: <span id="batsman1"></span><span class="bat-symbol" id="bat1">🏏</span></div>
+                    <div>BAT: <span id="batsman2"></span><span class="bat-symbol" id="bat2">🏏</span></div>
+                </div>
+                <div>
+                    <div>BOWL: <span id="bowler"></span><span class="bowler-stats" id="bowlerStats"></span></div>
+                    <div class="over-progress" id="bowlerOver"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="admin-panel">
+        <h3>Admin Controls</h3>
+        <div class="admin-controls">
+            <div>
+                <input type="text" id="editTeam1" placeholder="Team 1">
+                <input type="text" id="editTeam2" placeholder="Team 2">
+            </div>
+            <div>
+                <input type="number" id="editRuns" placeholder="Runs">
+                <input type="number" id="editWickets" placeholder="Wickets">
+            </div>
+            <div>
+                <input type="number" step="0.1" id="editOvers" placeholder="Current Overs">
+                <input type="number" step="0.1" id="editTotalOvers" placeholder="Total Overs">
+            </div>
+            <div>
+                <input type="text" id="editBowler" placeholder="Bowler">
+                <div class="previous-bowlers" id="previousBowlers"></div>
+            </div>
+            <div>
+                <input type="text" id="editBatsman1" placeholder="Batsman 1">
+                <input type="text" id="editBatsman2" placeholder="Batsman 2">
+            </div>
+            <div>
+                <input type="text" id="newBatsman" placeholder="New Batsman">
+            </div>
+            <div class="button-container">
+                <button onclick="addRun(0)">0</button>
+                <button onclick="addRun(1)">1</button>
+                <button onclick="addRun(2)">2</button>
+                <button onclick="addRun(3)">3</button>
+                <button onclick="addRun(4)">4</button>
+                <button onclick="addRun(6)">6</button>
+                <button onclick="addWide()">WD</button>
+                <button onclick="addLegBye()">LB</button>
+                <button onclick="addNoBall()">NO BALL</button>
+                <button onclick="addOut()">OUT</button>
+                <button onclick="switchStrike()">SWITCH ✴</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let batsmen = [
+            { name: 'Player 1', runs: 0, balls: 0, onStrike: true },
+            { name: 'Player 2', runs: 0, balls: 0, onStrike: false }
+        ];
+        let bowlers = [];
+        let currentBowler = null;
+        let totalBalls = 0;
+        let isFreeHitActive = false;
+
+        function triggerAnimation(elementId) {
+            const animElement = document.getElementById(elementId);
+            animElement.style.display = 'block';
+            animElement.style.animation = 'none';
+            void animElement.offsetWidth;
+            animElement.style.animation = 'flash 1s ease-out';
+            
+            setTimeout(() => {
+                animElement.style.display = 'none';
+            }, 1000);
+        }
+
+        function showFreeHit() {
+            const freeHitElement = document.getElementById('freeHitAnimation');
+            freeHitElement.style.display = 'block';
+            isFreeHitActive = true;
+        }
+
+        function endFreeHit() {
+            const freeHitElement = document.getElementById('freeHitAnimation');
+            freeHitElement.style.display = 'none';
+            isFreeHitActive = false;
+        }
+
+        function handleBowlerChange() {
+            const newBowler = document.getElementById('editBowler').value;
+            if (!bowlers.some(b => b.name === newBowler)) {
+                bowlers.push({
+                    name: newBowler,
+                    runs: 0,
+                    balls: 0,
+                    deliveries: []
+                });
+            }
+            currentBowler = bowlers.find(b => b.name === newBowler);
+            updateScorecard();
+            updatePreviousBowlersList();
+        }
+
+        function updateBowlerStats(runs = 0, type = 'normal') {
+            if (!currentBowler) handleBowlerChange();
+            
+            currentBowler.runs += runs;
+            
+            if (type !== 'wd' && type !== 'nb') {
+                currentBowler.balls++;
+                if (isFreeHitActive) endFreeHit();
+            }
+            
+            currentBowler.deliveries.push(type);
+            
+            const overProgress = document.getElementById('bowlerOver');
+            overProgress.innerHTML = currentBowler.deliveries.slice(-6).map(d => {
+                let symbol = d;
+                let cls = 'default-symbol';
+                if(d === '6') { symbol = '6'; cls = 'symbol-6'; }
+                else if(d === '4') { symbol = '4'; cls = 'symbol-4'; }
+                else if(d === 'W') { symbol = 'W'; cls = 'symbol-W'; }
+                else if(d === 'nb') { symbol = 'nb'; cls = 'symbol-nb'; }
+                else if(d === '0') { symbol = '0'; cls = 'symbol-0'; }
+                else if(d === 'wd') { symbol = 'wd'; cls = 'symbol-wd'; }
+                else if(d === 'lb') { symbol = 'lb'; cls = 'symbol-lb'; }
+                return `<div class="ball-symbol ${cls}">${symbol}</div>`;
+            }).join('');
+            
+            updatePreviousBowlersList();
+        }
+
+        function updatePreviousBowlersList() {
+            const list = document.getElementById('previousBowlers');
+            list.innerHTML = bowlers.map(bowler => {
+                const overs = Math.floor(bowler.balls / 6);
+                const balls = bowler.balls % 6;
+                const economy = bowler.balls > 0 ? 
+                    (bowler.runs / (bowler.balls / 6)).toFixed(2) : 0.00;
+                const wickets = bowler.deliveries.filter(d => d === 'W').length;
+                
+                return `<div class="previous-bowler" onclick="selectBowler('${bowler.name}')">
+                    <span>${bowler.name}</span>
+                    <span class="bowler-stats">
+                        ${bowler.runs}-${wickets} (${overs}.${balls}) • ER: ${economy}
+                    </span>
+                </div>`;
+            }).join('');
+        }
+
+        function selectBowler(name) {
+            document.getElementById('editBowler').value = name;
+            handleBowlerChange();
+        }
+
+        function calculateRunRate() {
+            const totalRuns = parseInt(document.getElementById('editRuns').value || 0);
+            const totalBalls = parseFloat(document.getElementById('editOvers').value.replace('.', ''));
+            if (totalBalls === 0) return '0.00';
+            return (totalRuns / (totalBalls / 6)).toFixed(2);
+        }
+
+        function addRun(runs) {
+            const type = runs === 0 ? '0' : runs.toString();
+            updateBowlerStats(runs, type);
+            const striker = batsmen.find(b => b.onStrike);
+            striker.runs += runs;
+            striker.balls++;
+            
+            document.getElementById('editRuns').value = 
+                parseInt(document.getElementById('editRuns').value || 0) + runs;
+            
+            incrementOver();
+            
+            if (runs % 2 !== 0) switchStrike();
+            
+            if(runs === 6) triggerAnimation('sixAnimation');
+            if(runs === 4) triggerAnimation('fourAnimation');
+            
+            updateScorecard();
+        }
+
+        function addLegBye() {
+            const runs = prompt("Enter leg bye runs:");
+            if (runs !== null && !isNaN(runs)) {
+                const parsedRuns = parseInt(runs);
+                const striker = batsmen.find(b => b.onStrike);
+                
+                striker.balls++;
+                
+                if (parsedRuns > 0) {
+                    document.getElementById('editRuns').value = 
+                        parseInt(document.getElementById('editRuns').value || 0) + parsedRuns;
+                    updateBowlerStats(0, 'lb');
+                } else {
+                    updateBowlerStats(0, '0');
+                }
+                
+                incrementOver();
+                
+                if (parsedRuns % 2 !== 0) switchStrike();
+                updateScorecard();
+            }
+        }
+
+        function addWide() {
+            updateBowlerStats(1, 'wd');
+            document.getElementById('editRuns').value = 
+                parseInt(document.getElementById('editRuns').value || 0) + 1;
+            
+            if (isFreeHitActive) {
+                document.getElementById('freeHitAnimation').style.display = 'block';
+            }
+            
+            triggerAnimation('wideAnimation');
+            updateScorecard();
+        }
+
+        function addNoBall() {
+            showFreeHit();
+            updateBowlerStats(1, 'nb');
+            
+            document.getElementById('editRuns').value = 
+                parseInt(document.getElementById('editRuns').value || 0) + 1;
+
+            const batsmanRuns = prompt("Add batsman runs (0 if not played):", "0");
+            if (batsmanRuns !== null && !isNaN(batsmanRuns)) {
+                const parsedRuns = parseInt(batsmanRuns);
+                if (parsedRuns > 0) {
+                    const striker = batsmen.find(b => b.onStrike);
+                    striker.runs += parsedRuns;
+                    document.getElementById('editRuns').value = 
+                        parseInt(document.getElementById('editRuns').value || 0) + parsedRuns;
+                    if (parsedRuns % 2 !== 0) switchStrike();
+                }
+            }
+            triggerAnimation('noballAnimation');
+            updateScorecard();
+        }
+
+        function addOut() {
+            const outgoingBatsman = batsmen.find(b => b.onStrike);
+            const isDuck = outgoingBatsman.runs === 0;
+            
+            // Show dismissal animation
+            const dismissalElement = document.getElementById('dismissalAnimation');
+            const detailsElement = document.getElementById('dismissalDetails');
+            const duckElement = document.getElementById('duckAnimation');
+            
+            const strikeRate = outgoingBatsman.balls > 0 ? 
+                ((outgoingBatsman.runs / outgoingBatsman.balls) * 100).toFixed(2) : 0.00;
+            
+            detailsElement.innerHTML = `
+                <p>${outgoingBatsman.name}</p>
+                <div style="display: flex; justify-content: center; gap: 15px; margin: 10px 0;">
+                    <span>${outgoingBatsman.runs} Runs</span>
+                    <span>${outgoingBatsman.balls} Balls</span>
+                    <span>SR: ${strikeRate}</span>
+                </div>
+            `;
+            
+            duckElement.style.display = isDuck ? 'block' : 'none';
+            dismissalElement.style.display = 'block';
+            
+            // Hide after 10 seconds
+            setTimeout(() => {
+                dismissalElement.style.display = 'none';
+            }, 10000);
+
+            // Update team data
+            const newName = document.getElementById('newBatsman').value || 'New Player';
+            const strikerIndex = batsmen.findIndex(b => b.onStrike);
+            
+            batsmen[strikerIndex] = {
+                name: newName,
+                runs: 0,
+                balls: 0,
+                onStrike: true
+            };
+
+            document.getElementById('editWickets').value = 
+                parseInt(document.getElementById('editWickets').value || 0) + 1;
+            document.getElementById('newBatsman').value = '';
+            
+            updateBowlerStats(0, 'W');
+            triggerAnimation('outAnimation');
+            updateScorecard();
+        }
+
+        function incrementOver() {
+            totalBalls++;
+            const overs = Math.floor(totalBalls / 6);
+            const balls = totalBalls % 6;
+            document.getElementById('editOvers').value = `${overs}.${balls}`;
+
+            if (balls === 0) {
+                setTimeout(() => {
+                    const newBowler = prompt("Over completed! Enter new bowler:");
+                    if (newBowler) {
+                        document.getElementById('editBowler').value = newBowler;
+                        handleBowlerChange();
+                    }
+                }, 100);
+            }
+        }
+
+        function switchStrike() {
+            batsmen.forEach(b => b.onStrike = !b.onStrike);
+            updateScorecard();
+        }
+
+        function updateScorecard() {
+            document.getElementById('team1').textContent = 
+                document.getElementById('editTeam1').value || 'TEAM A';
+            document.getElementById('team2').textContent = 
+                document.getElementById('editTeam2').value || 'TEAM B';
+            
+            batsmen[0].name = document.getElementById('editBatsman1').value || 'Player 1';
+            batsmen[1].name = document.getElementById('editBatsman2').value || 'Player 2';
+
+            document.getElementById('batsman1').innerHTML = 
+                `${batsmen[0].name}: ${batsmen[0].runs} <span class="player-stats">(${batsmen[0].balls})</span>`;
+            document.getElementById('batsman2').innerHTML = 
+                `${batsmen[1].name}: ${batsmen[1].runs} <span class="player-stats">(${batsmen[1].balls})</span>`;
+
+            document.getElementById('runs').textContent = 
+                document.getElementById('editRuns').value || '0';
+            document.getElementById('wickets').textContent = 
+                document.getElementById('editWickets').value || '0';
+            document.getElementById('overs').textContent = 
+                document.getElementById('editOvers').value || '0.0';
+            document.getElementById('totalOvers').textContent = 
+                document.getElementById('editTotalOvers').value || '0.0';
+            document.getElementById('runRate').textContent = calculateRunRate();
+
+            if (currentBowler) {
+                const overs = Math.floor(currentBowler.balls / 6);
+                const balls = currentBowler.balls % 6;
+                document.getElementById('bowlerStats').textContent = 
+                    `${currentBowler.runs}-${overs}.${balls}`;
+            }
+
+            document.getElementById('bat1').className = 
+                `bat-symbol ${batsmen[0].onStrike ? 'visible' : ''}`;
+            document.getElementById('bat2').className = 
+                `bat-symbol ${batsmen[1].onStrike ? 'visible' : ''}`;
+        }
+
+        document.querySelectorAll('.admin-controls input').forEach(input => {
+            input.addEventListener('input', updateScorecard);
+        });
+
+        document.getElementById('editBowler').addEventListener('change', handleBowlerChange);
+
+        // Initialize
+        updateScorecard();
+        updatePreviousBowlersList();
+    </script>
+</body>
+</html>
